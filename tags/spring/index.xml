@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Spring on 逃跑山羊生活志</title><link>https://www.hinathan.online/tags/spring/</link><description>Recent content in Spring on 逃跑山羊生活志 created by</description><generator>Hugo -- gohugo.io</generator><language>zh</language><copyright>2017 逃跑山羊生活志 All rights reserved</copyright><lastBuildDate>Wed, 16 Apr 2025 13:20:16 +0800</lastBuildDate><atom:link href="https://www.hinathan.online/tags/spring/index.xml" rel="self" type="application/rss+xml"/><item><title>Spring源码阅读（一）Bean的创建过程</title><link>https://www.hinathan.online/blog/spring-bean-create/</link><pubDate>Wed, 16 Apr 2025 13:20:16 +0800</pubDate><guid>https://www.hinathan.online/blog/spring-bean-create/</guid><description>&lt;p>实例化 -&amp;gt; 属性填充 -&amp;gt; BeanPostProcessor前置处理 -&amp;gt; 初始化阶段 -&amp;gt; BeanPostProcessor后置处理 -&amp;gt; 初始化完成 -&amp;gt; PostConstruct -&amp;gt; InitializingBean.afterPropertiesSet -&amp;gt; 自定义init-method -&amp;gt; AOP&lt;/p>
+&lt;h2 id="创建的大致流程">创建的大致流程&lt;/h2>
+&lt;h3 id="推断构造方法">推断构造方法&lt;/h3>
+&lt;p>利用该类的构造方法来实例化得到一个对象（但是如何一个类中有多个构造方法，Spring则会进行选择，这个叫做推断构造方法）&lt;/p>
+&lt;h3 id="依赖注入">依赖注入&lt;/h3>
+&lt;p>得到一个对象后，Spring会判断该对象中是否存在被@Autowired注解了的属性，把这些属性找出来并由Spring进行赋值（属性填充）&lt;/p>
+&lt;h3 id="beanpostprocessor处理和初始化">BeanPostProcessor处理和初始化&lt;/h3>
+&lt;p>依赖注入后，Spring会判断该对象是否实现了&lt;code>BeanNameAware&lt;/code>接口、&lt;code>BeanClassLoaderAware&lt;/code>接口、&lt;code>BeanFactoryAware&lt;/code>接口，如果实现了，就表示当前对象必须实现该接口中所定义的&lt;code>setBeanName()&lt;/code>、&lt;code>setBeanClassLoader()&lt;/code>、&lt;code>setBeanFactory()&lt;/code>方法，那Spring就会调用这些方法并传入相应的参数（Aware回调）&lt;/p>
+&lt;h3 id="postconstruct-处理">PostConstruct 处理&lt;/h3>
+&lt;p>Aware回调后，Spring会判断该对象中是否存在某个方法被@PostConstruct注解了，如果存在，Spring会调用当前对象的此方法（初始化前）&lt;/p>
+&lt;h3 id="initializingbeanafterpropertiesset">InitializingBean.afterPropertiesSet&lt;/h3>
+&lt;p>紧接着，Spring会判断该对象是否实现了InitializingBean接口，如果实现了，就表示当前对象必须实现该接口中的afterPropertiesSet()方法，那Spring就会调用当前对象中的afterPropertiesSet()方法（初始化）&lt;/p>
+&lt;h3 id="自定义init-method">自定义init-method&lt;/h3>
+&lt;p>执行自定义init-method&lt;/p>
+&lt;h3 id="aop">AOP&lt;/h3>
+&lt;p>最后，Spring会判断当前对象需不需要进行AOP，如果不需要那么Bean就创建完了，如果需要进行AOP，则会进行动态代理并生成一个代理对象做为Bean（初始化后）&lt;/p>
+&lt;p>我们可以发现，当Spring根据UserService类来创建一个Bean时：&lt;/p>
+&lt;ol>
+&lt;li>如果不用进行AOP，那么Bean就是UserService类的构造方法所得到的对象。&lt;/li>
+&lt;li>如果需要进行AOP，那么Bean就是UserService的代理类所实例化得到的对象，而不是UserService本身所得到的对象。&lt;/li>
+&lt;/ol>
+&lt;p>Bean对象创建出来后：&lt;/p>
+&lt;ol>
+&lt;li>如果当前Bean是单例Bean，那么会把该Bean对象存入一个Map&amp;lt;String, Object&amp;gt;，Map的key为beanName，value为Bean对象。这样下次getBean时就可以直接从Map中拿到对应的Bean对象了。（实际上，在Spring源码中，这个Map就是单例池）&lt;/li>
+&lt;li>如果当前Bean是原型Bean，那么后续没有其他动作，不会存入一个Map，下次getBean时会再次执行上述创建过程，得到一个新的Bean对象。&lt;/li>
+&lt;/ol>
+&lt;h2 id="初始化入口">初始化入口&lt;/h2>
+&lt;p>&lt;code>AbstractAutowireCapableBeanFactory&lt;/code>&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-java" data-lang="java">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// 源码路径：org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">protected&lt;/span> Object &lt;span style="color:#a6e22e">initializeBean&lt;/span>&lt;span style="color:#f92672">(&lt;/span>String beanName&lt;span style="color:#f92672">,&lt;/span> Object bean&lt;span style="color:#f92672">,&lt;/span> &lt;span style="color:#a6e22e">@Nullable&lt;/span> RootBeanDefinition mbd&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 调用Aware接口方法
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> invokeAwareMethods&lt;span style="color:#f92672">(&lt;/span>beanName&lt;span style="color:#f92672">,&lt;/span> bean&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Object wrappedBean &lt;span style="color:#f92672">=&lt;/span> bean&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">(&lt;/span>mbd &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#66d9ef">null&lt;/span> &lt;span style="color:#f92672">||&lt;/span> &lt;span style="color:#f92672">!&lt;/span>mbd&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">isSynthetic&lt;/span>&lt;span style="color:#f92672">())&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 执行BeanPostProcessor前置处理（包括@PostConstruct注入）
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> wrappedBean &lt;span style="color:#f92672">=&lt;/span> applyBeanPostProcessorsBeforeInitialization&lt;span style="color:#f92672">(&lt;/span>wrappedBean&lt;span style="color:#f92672">,&lt;/span> beanName&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">try&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 执行InitializingBean和init-method
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> invokeInitMethods&lt;span style="color:#f92672">(&lt;/span>beanName&lt;span style="color:#f92672">,&lt;/span> wrappedBean&lt;span style="color:#f92672">,&lt;/span> mbd&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">catch&lt;/span> &lt;span style="color:#f92672">(&lt;/span>Throwable ex&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">throw&lt;/span> &lt;span style="color:#66d9ef">new&lt;/span> BeanCreationException&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">(&lt;/span>mbd &lt;span style="color:#f92672">==&lt;/span> &lt;span style="color:#66d9ef">null&lt;/span> &lt;span style="color:#f92672">||&lt;/span> &lt;span style="color:#f92672">!&lt;/span>mbd&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">isSynthetic&lt;/span>&lt;span style="color:#f92672">())&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 执行BeanPostProcessor后置处理
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> wrappedBean &lt;span style="color:#f92672">=&lt;/span> applyBeanPostProcessorsAfterInitialization&lt;span style="color:#f92672">(&lt;/span>wrappedBean&lt;span style="color:#f92672">,&lt;/span> beanName&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> wrappedBean&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="postconstruct-处理机制">@PostConstruct 处理机制&lt;/h2>
+&lt;p>InitDestroyAnnotationBeanPostProcessor&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-java" data-lang="java">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// 源码关键路径：org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">public&lt;/span> Object &lt;span style="color:#a6e22e">postProcessBeforeInitialization&lt;/span>&lt;span style="color:#f92672">(&lt;/span>Object bean&lt;span style="color:#f92672">,&lt;/span> String beanName&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#66d9ef">throws&lt;/span> BeansException &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 获取@PostConstruct元数据
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> LifecycleMetadata metadata &lt;span style="color:#f92672">=&lt;/span> findLifecycleMetadata&lt;span style="color:#f92672">(&lt;/span>bean&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">getClass&lt;/span>&lt;span style="color:#f92672">());&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">try&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 反射执行初始化方法
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> metadata&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">invokeInitMethods&lt;/span>&lt;span style="color:#f92672">(&lt;/span>bean&lt;span style="color:#f92672">,&lt;/span> beanName&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">catch&lt;/span> &lt;span style="color:#f92672">(&lt;/span>Throwable ex&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">throw&lt;/span> &lt;span style="color:#66d9ef">new&lt;/span> BeanCreationException&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> bean&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="initializingbean-处理机制">InitializingBean 处理机制&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-java" data-lang="java">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// 源码路径：org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">protected&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> &lt;span style="color:#a6e22e">invokeInitMethods&lt;/span>&lt;span style="color:#f92672">(&lt;/span>String beanName&lt;span style="color:#f92672">,&lt;/span> Object bean&lt;span style="color:#f92672">,&lt;/span> &lt;span style="color:#a6e22e">@Nullable&lt;/span> RootBeanDefinition mbd&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">throws&lt;/span> Throwable &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">(&lt;/span>bean &lt;span style="color:#66d9ef">instanceof&lt;/span> InitializingBean&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 执行接口方法
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#f92672">((&lt;/span>InitializingBean&lt;span style="color:#f92672">)&lt;/span> bean&lt;span style="color:#f92672">).&lt;/span>&lt;span style="color:#a6e22e">afterPropertiesSet&lt;/span>&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">(&lt;/span>mbd &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">null&lt;/span> &lt;span style="color:#f92672">&amp;amp;&amp;amp;&lt;/span> bean&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">getClass&lt;/span>&lt;span style="color:#f92672">()&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> NullBean&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">class&lt;/span>&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> String initMethodName &lt;span style="color:#f92672">=&lt;/span> mbd&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">getInitMethodName&lt;/span>&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">(&lt;/span>StringUtils&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">hasLength&lt;/span>&lt;span style="color:#f92672">(&lt;/span>initMethodName&lt;span style="color:#f92672">))&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 反射调用自定义init方法
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> invokeCustomInitMethod&lt;span style="color:#f92672">(&lt;/span>beanName&lt;span style="color:#f92672">,&lt;/span> bean&lt;span style="color:#f92672">,&lt;/span> mbd&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="执行顺序与线程安全">执行顺序与线程安全&lt;/h2>
+&lt;p>BeanPostProcessor.postProcessBeforeInitialization -&amp;gt; PostConstruct -&amp;gt; InitializingBean.afterPropertiesSet -&amp;gt; 自定义init-method -&amp;gt; BeanPostProcessor.postProcessAfterInitialization&lt;/p>
+&lt;h2 id="核心类">核心类&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>InitDestroyAnnotationBeanPostProcessor&lt;/p>
+&lt;ul>
+&lt;li>postProcessBeforeInitialization()&lt;/li>
+&lt;li>findLifecycleMetadata()&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>AbstractAutowireCapableBeanFactory&lt;/p>
+&lt;ul>
+&lt;li>invokeInitMethods()&lt;/li>
+&lt;li>invokeCustomInitMethod()&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>CommonAnnotationBeanPostProcessor&lt;/p>
+&lt;ul>
+&lt;li>postProcessBeforeInitialization()&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="postconstruct-和-initializingbean">@PostConstruct 和 InitializingBean&lt;/h2>
+&lt;p>@PostConstruct 和 InitializingBean 在 Spring 生命周期中扮演着不同的角色：&lt;/p>
+&lt;h3 id="postconstruct">@PostConstruct&lt;/h3>
+&lt;ul>
+&lt;li>基于标准注解的轻量级初始化&lt;/li>
+&lt;li>通过BeanPostProcessor实现&lt;/li>
+&lt;li>支持方法级细粒度控制&lt;/li>
+&lt;/ul>
+&lt;h3 id="initializingbean">InitializingBean&lt;/h3>
+&lt;ul>
+&lt;li>框架原生接口方案&lt;/li>
+&lt;li>直接集成到Bean初始化流程&lt;/li>
+&lt;li>提供类型安全的回调&lt;/li>
+&lt;/ul>
+&lt;h3 id="生产环境选择建议">生产环境选择建议&lt;/h3>
+&lt;ul>
+&lt;li>80%场景使用@PostConstruct&lt;/li>
+&lt;li>需要强制初始化保障时选择InitializingBean&lt;/li>
+&lt;li>第三方库集成使用init-method&lt;/li>
+&lt;/ul></description></item></channel></rss>
