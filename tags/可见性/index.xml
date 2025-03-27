@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>可见性 on 逃跑山羊生活志</title><link>https://www.hinathan.online/tags/%E5%8F%AF%E8%A7%81%E6%80%A7/</link><description>Recent content in 可见性 on 逃跑山羊生活志 created by</description><generator>Hugo -- gohugo.io</generator><language>zh</language><copyright>2017 逃跑山羊生活志 All rights reserved</copyright><lastBuildDate>Wed, 15 Jan 2020 22:20:16 +0800</lastBuildDate><atom:link href="https://www.hinathan.online/tags/%E5%8F%AF%E8%A7%81%E6%80%A7/index.xml" rel="self" type="application/rss+xml"/><item><title>Java并发编程（三）并发三大特性-可见性</title><link>https://www.hinathan.online/blog/03-visibility/</link><pubDate>Wed, 15 Jan 2020 22:20:16 +0800</pubDate><guid>https://www.hinathan.online/blog/03-visibility/</guid><description>&lt;h2 id="可见性">可见性&lt;/h2>
+&lt;p>当一个线程修改了共享变量的值，其他线程能够看到修改的值。Java 内存模型是通过在变量修改后将新值同步回主内存，在变量读取前从主内存刷新变量值这种依赖主内存作为传递媒介的方法来实现可见性的。&lt;/p>
+&lt;h3 id="如何保证可见性">如何保证可见性&lt;/h3>
+&lt;ul>
+&lt;li>通过 &lt;code>volatile&lt;/code> 关键字保证可见性。&lt;/li>
+&lt;li>通过 &lt;code>内存屏障&lt;/code>保证可见性。&lt;/li>
+&lt;li>通过 &lt;code>synchronized&lt;/code> 关键字保证可见性。&lt;/li>
+&lt;li>通过 &lt;code>Lock&lt;/code>保证可见性。&lt;/li>
+&lt;li>通过 &lt;code>final&lt;/code> 关键字保证可见性&lt;/li>
+&lt;/ul>
+&lt;h3 id="可见性问题深入分析">可见性问题深入分析&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-java" data-lang="java">&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">/**
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"> * -XX:+UnlockDiagnosticVMOptions -XX:+PrintAssembly -Xcomp
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"> */&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">public&lt;/span> &lt;span style="color:#66d9ef">class&lt;/span> &lt;span style="color:#a6e22e">VisibilityTest&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">private&lt;/span> &lt;span style="color:#66d9ef">boolean&lt;/span> flag &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">true&lt;/span>&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">public&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> &lt;span style="color:#a6e22e">refresh&lt;/span>&lt;span style="color:#f92672">()&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> flag &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">false&lt;/span>&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> System&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">out&lt;/span>&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">println&lt;/span>&lt;span style="color:#f92672">(&lt;/span>Thread&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">currentThread&lt;/span>&lt;span style="color:#f92672">().&lt;/span>&lt;span style="color:#a6e22e">getName&lt;/span>&lt;span style="color:#f92672">()&lt;/span> &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#e6db74">&amp;#34;修改flag&amp;#34;&lt;/span>&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">public&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> &lt;span style="color:#a6e22e">load&lt;/span>&lt;span style="color:#f92672">()&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> System&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">out&lt;/span>&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">println&lt;/span>&lt;span style="color:#f92672">(&lt;/span>Thread&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">currentThread&lt;/span>&lt;span style="color:#f92672">().&lt;/span>&lt;span style="color:#a6e22e">getName&lt;/span>&lt;span style="color:#f92672">()&lt;/span> &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#e6db74">&amp;#34;开始执行.....&amp;#34;&lt;/span>&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">int&lt;/span> i &lt;span style="color:#f92672">=&lt;/span> 0&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">while&lt;/span> &lt;span style="color:#f92672">(&lt;/span>flag&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> i&lt;span style="color:#f92672">++;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">//TODO 业务逻辑
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> System&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">out&lt;/span>&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">println&lt;/span>&lt;span style="color:#f92672">(&lt;/span>Thread&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">currentThread&lt;/span>&lt;span style="color:#f92672">().&lt;/span>&lt;span style="color:#a6e22e">getName&lt;/span>&lt;span style="color:#f92672">()&lt;/span> &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#e6db74">&amp;#34;跳出循环: i=&amp;#34;&lt;/span> &lt;span style="color:#f92672">+&lt;/span> i&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">public&lt;/span> &lt;span style="color:#66d9ef">static&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>&lt;span style="color:#f92672">(&lt;/span>String&lt;span style="color:#f92672">[]&lt;/span> args&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#66d9ef">throws&lt;/span> InterruptedException &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> VisibilityTest test &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">new&lt;/span> VisibilityTest&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 线程threadA模拟数据加载场景
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> Thread threadA &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">new&lt;/span> Thread&lt;span style="color:#f92672">(&lt;/span>test&lt;span style="color:#f92672">::&lt;/span>load&lt;span style="color:#f92672">,&lt;/span> &lt;span style="color:#e6db74">&amp;#34;threadA&amp;#34;&lt;/span>&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> threadA&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">start&lt;/span>&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 让threadA执行一会儿
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> Thread&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">sleep&lt;/span>&lt;span style="color:#f92672">(&lt;/span>1000&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 线程threadB通过flag控制threadA的执行时间
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> Thread threadB &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">new&lt;/span> Thread&lt;span style="color:#f92672">(&lt;/span>test&lt;span style="color:#f92672">::&lt;/span>refresh&lt;span style="color:#f92672">,&lt;/span> &lt;span style="color:#e6db74">&amp;#34;threadB&amp;#34;&lt;/span>&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> threadB&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">start&lt;/span>&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">public&lt;/span> &lt;span style="color:#66d9ef">static&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> &lt;span style="color:#a6e22e">shortWait&lt;/span>&lt;span style="color:#f92672">(&lt;/span>&lt;span style="color:#66d9ef">long&lt;/span> interval&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">long&lt;/span> start &lt;span style="color:#f92672">=&lt;/span> System&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">nanoTime&lt;/span>&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">long&lt;/span> end&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">do&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> end &lt;span style="color:#f92672">=&lt;/span> System&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">nanoTime&lt;/span>&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span> &lt;span style="color:#66d9ef">while&lt;/span> &lt;span style="color:#f92672">(&lt;/span>start &lt;span style="color:#f92672">+&lt;/span> interval &lt;span style="color:#f92672">&amp;gt;=&lt;/span> end&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>上面的例子存在可见性问题！&lt;/p>
+&lt;h2 id="jmm的内存可见性保证">JMM的内存可见性保证&lt;/h2>
+&lt;blockquote>
+&lt;p>什么时候刷主内存，线程执行结束刷回主内存吗？还是一旦更新完之后就立马刷主内存？本地内存什么时候会没有？&lt;/p>
+&lt;/blockquote>
+&lt;p>按程序类型，Java程序的内存可见性保证可以分为下列3类：&lt;/p>
+&lt;ul>
+&lt;li>单线程程序。单线程程序不会出现内存可见性问题。编译器、runtime和处理器会共同确保单线程程序的执行结果与该程序在顺序一致性模型中的执行结果相同。&lt;/li>
+&lt;li>正确同步的多线程程序。正确同步的多线程程序的执行将具有顺序一致性（程序的执行结果与该程序在顺序一致性内存模型中的执行结果相同）。这是JMM关注的重点，JMM通过&lt;code>限制编译器和处理器的重排序&lt;/code>来为程序员提供内存可见性保证。&lt;/li>
+&lt;li>未同步/未正确同步的多线程程序。JMM为它们提供了最小安全性保障：线程执行时读取到的值，要么是之前某个线程写入的值，要么是默认值。
+&lt;ul>
+&lt;li>未同步程序在JMM中执行时，整体上是无序的，其执行结果无法预知。&lt;/li>
+&lt;li>JMM不保证&lt;u>未同步程序的执行结果&lt;/u>与该程序&lt;u>在顺序一致性模型中的执行结果&lt;/u>一致。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="未同步程序在两个模型中的执行特性有如下几个差异">未同步程序在两个模型中的执行特性有如下几个差异&lt;/h3>
+&lt;ol>
+&lt;li>&lt;code>顺序一致性模型&lt;/code>保证单线程内的操作会按程序的顺序执行，而JMM不保证单线程内的操作会按程序的顺序执行，比如正确同步的多线程程序在临界区内的重排序。&lt;/li>
+&lt;li>顺序一致性模型保证所有线程只能看到一致的操作执行顺序，而JMM不保证所有线程能看到一致的操作执行顺序。&lt;/li>
+&lt;li>顺序一致性模型保证对所有的内存读/写操作都具有原子性，而JMM不保证对64位的long型和double型变量的写操作具有原子性（32位处理器）。&lt;/li>
+&lt;/ol>
+&lt;h3 id="volatile">volatile&lt;/h3>
+&lt;h4 id="volatile的特性">volatile的特性&lt;/h4>
+&lt;ul>
+&lt;li>可见性：对一个volatile变量的读，总是能看到（任意线程）对这个volatile变量最后的写入。&lt;/li>
+&lt;li>原子性：对任意单个volatile变量的读/写具有原子性，但类似于&lt;code>volatile++&lt;/code>这种复合操作不具有原子性（&lt;u>基于这点，我们通过会认为volatile不具备原子性&lt;/u>）。volatile仅仅保证对单个volatile变量的读/写具有原子性，而锁的互斥执行的特性可以确保对整个临界区代码的执行具有原子性。&lt;/li>
+&lt;/ul>
+&lt;blockquote>
+&lt;p>64位的long型和double型变量，只要它是volatile变量，对该变量的读/写就具有原子性。&lt;/p>
+&lt;/blockquote>
+&lt;ul>
+&lt;li>有序性：对volatile修饰的变量的读写操作**&lt;u>前后加上各种特定的内存屏障来禁止指令重排序&lt;/u>**来保障有序性。&lt;/li>
+&lt;/ul>
+&lt;p>在&lt;code>JSR-133&lt;/code>之前的旧Java内存模型中，虽然不允许volatile变量之间重排序，但旧的Java内存模型允许volatile变量与普通变量重排序。为了提供一种比锁更轻量级的线程之间通信的机制，JSR-133专家组决定增强volatile的内存语义：&lt;/p>
+&lt;p>&lt;strong>严格限制编译器和处理器对volatile变量与普通变量的重排序，确保volatile的写-读和锁的释放-获取具有相同的内存语义。&lt;/strong>&lt;/p>
+&lt;h4 id="volatile写-读的内存语义">volatile写-读的内存语义&lt;/h4>
+&lt;ul>
+&lt;li>当写一个volatile变量时，JMM会把该线程对应的本地内存中的共享变量值刷新到主内存。&lt;/li>
+&lt;li>当读一个volatile变量时，JMM会把该线程对应的本地内存置为无效，线程接下来将从主内存中读取共享变量。&lt;/li>
+&lt;/ul>
+&lt;h4 id="volatile可见性实现原理">volatile可见性实现原理&lt;/h4>
+&lt;h5 id="jmm内存交互层面实现">JMM内存交互层面实现&lt;/h5>
+&lt;p>volatile修饰的变量的&lt;code>read、load、use&lt;/code>操作和&lt;code>assign、store、write&lt;/code>必须是连续的，即修改后必须立即同步回主内存，使用时必须从主内存刷新，由此保证volatile变量操作对多线程的可见性。&lt;/p>
+&lt;h5 id="硬件层面实现">硬件层面实现&lt;/h5>
+&lt;p>通过&lt;code>lock前缀指令&lt;/code>，会锁定变量缓存行区域并写回主内存，这个操作称为“缓存锁定”，缓存一致性机制会阻止同时修改被两个以上处理器缓存的内存区域数据。&lt;u>一个处理器的缓存回写到内存会导致其他处理器的缓存无效。&lt;/u>&lt;/p>
+&lt;h5 id="volatile在hotspot的实现">volatile在hotspot的实现&lt;/h5>
+&lt;h6 id="字节码解释器实现">字节码解释器实现&lt;/h6>
+&lt;p>JVM中的字节码解释器(bytecodeInterpreter)，用C++实现了JVM指令。&lt;/p>
+&lt;p>&lt;code>src/hotspot/share/interpreter/zero/bytecodeInterpreter.cpp&lt;/code>文件：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-cpp" data-lang="cpp">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">if&lt;/span> (cache&lt;span style="color:#f92672">-&amp;gt;&lt;/span>is_volatile()) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">switch&lt;/span> (tos_type) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> ztos:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> obj&lt;span style="color:#f92672">-&amp;gt;&lt;/span>release_byte_field_put(field_offset, (STACK_INT(&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>)); &lt;span style="color:#75715e">// only store LSB
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#66d9ef">break&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> btos:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> obj&lt;span style="color:#f92672">-&amp;gt;&lt;/span>release_byte_field_put(field_offset, STACK_INT(&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> ctos:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> obj&lt;span style="color:#f92672">-&amp;gt;&lt;/span>release_char_field_put(field_offset, STACK_INT(&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> stos:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> obj&lt;span style="color:#f92672">-&amp;gt;&lt;/span>release_short_field_put(field_offset, STACK_INT(&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> itos:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> obj&lt;span style="color:#f92672">-&amp;gt;&lt;/span>release_int_field_put(field_offset, STACK_INT(&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> ftos:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> obj&lt;span style="color:#f92672">-&amp;gt;&lt;/span>release_float_field_put(field_offset, STACK_FLOAT(&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> ltos:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> obj&lt;span style="color:#f92672">-&amp;gt;&lt;/span>release_long_field_put(field_offset, STACK_LONG(&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> dtos:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> obj&lt;span style="color:#f92672">-&amp;gt;&lt;/span>release_double_field_put(field_offset, STACK_DOUBLE(&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">case&lt;/span> atos: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> oop val &lt;span style="color:#f92672">=&lt;/span> STACK_OBJECT(&lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> VERIFY_OOP(val);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> obj&lt;span style="color:#f92672">-&amp;gt;&lt;/span>release_obj_field_put(field_offset, val);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">default&lt;/span>&lt;span style="color:#f92672">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ShouldNotReachHere();
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> OrderAccess&lt;span style="color:#f92672">::&lt;/span>storeload();
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h6 id="模板解释器实现">模板解释器实现&lt;/h6>
+&lt;p>模板解释器(&lt;code>templateInterpreter&lt;/code>)，其对每个指令都写了一段对应的汇编代码，启动时将每个指令与对应汇编代码入口绑定，可以说是效率做到了极致。&lt;/p>
+&lt;p>&lt;code>src/hotspot/os_cpu&lt;/code> 包含了不同cpu的方法实现&lt;/p>
+&lt;p>&lt;code>src/hotspot/cpu/x86/templateTable_x86.cpp&lt;/code>&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-cpp" data-lang="cpp">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">void&lt;/span> TemplateTable&lt;span style="color:#f92672">::&lt;/span>volatile_barrier(Assembler&lt;span style="color:#f92672">::&lt;/span>Membar_mask_bits
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> order_constraint) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Helper function to insert a is-volatile test and memory barrier
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#66d9ef">if&lt;/span> (os&lt;span style="color:#f92672">::&lt;/span>is_MP()) { &lt;span style="color:#75715e">// Not needed on single CPU
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> __ &lt;span style="color:#a6e22e">membar&lt;/span>(order_constraint);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// 负责执行putfield或putstatic指令
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">void&lt;/span> TemplateTable&lt;span style="color:#f92672">::&lt;/span>putfield_or_static(&lt;span style="color:#66d9ef">int&lt;/span> byte_no, &lt;span style="color:#66d9ef">bool&lt;/span> is_static, RewriteControl rc) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// ...
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#75715e">// Check for volatile store
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> __ &lt;span style="color:#a6e22e">testl&lt;/span>(rdx, rdx);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> __ &lt;span style="color:#a6e22e">jcc&lt;/span>(Assembler&lt;span style="color:#f92672">::&lt;/span>zero, notVolatile);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> putfield_or_static_helper(byte_no, is_static, rc, obj, off, flags);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> volatile_barrier(Assembler&lt;span style="color:#f92672">::&lt;/span>Membar_mask_bits(Assembler&lt;span style="color:#f92672">::&lt;/span>StoreLoad &lt;span style="color:#f92672">|&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Assembler&lt;span style="color:#f92672">::&lt;/span>StoreStore));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> __ &lt;span style="color:#a6e22e">jmp&lt;/span>(Done);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> __ &lt;span style="color:#a6e22e">bind&lt;/span>(notVolatile);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> putfield_or_static_helper(byte_no, is_static, rc, obj, off, flags);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> __ &lt;span style="color:#a6e22e">bind&lt;/span>(Done);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>src/hotspot/cpu/x86/assembler_x86.hpp&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-cpp" data-lang="cpp">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// Serializes memory and blows flags
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">void&lt;/span> &lt;span style="color:#a6e22e">membar&lt;/span>(Membar_mask_bits order_constraint) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// We only have to handle StoreLoad
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#75715e">// x86平台只需要处理StoreLoad
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#66d9ef">if&lt;/span> (order_constraint &lt;span style="color:#f92672">&amp;amp;&lt;/span> StoreLoad) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">int&lt;/span> offset &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#f92672">-&lt;/span>VM_Version&lt;span style="color:#f92672">::&lt;/span>L1_line_size();
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> (offset &lt;span style="color:#f92672">&amp;lt;&lt;/span> &lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">128&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> offset &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#f92672">-&lt;/span>&lt;span style="color:#ae81ff">128&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 下面这两句插入了一条lock前缀指令: lock addl $0, $0(%rsp)
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> lock(); &lt;span style="color:#75715e">// lock前缀指令
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> addl(Address(rsp, offset), &lt;span style="color:#ae81ff">0&lt;/span>); &lt;span style="color:#75715e">// addl $0, $0(%rsp)
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在linux系统x86中的实现&lt;/p>
+&lt;p>x86处理器中利用lock实现类似内存屏障的效果。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-cpp" data-lang="cpp">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">inline&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> OrderAccess&lt;span style="color:#f92672">::&lt;/span>loadload() { compiler_barrier(); }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">inline&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> OrderAccess&lt;span style="color:#f92672">::&lt;/span>storestore() { compiler_barrier(); }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">inline&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> OrderAccess&lt;span style="color:#f92672">::&lt;/span>loadstore() { compiler_barrier(); }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">inline&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> OrderAccess&lt;span style="color:#f92672">::&lt;/span>storeload() { fence(); }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">inline&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> OrderAccess&lt;span style="color:#f92672">::&lt;/span>acquire() { compiler_barrier(); }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">inline&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> OrderAccess&lt;span style="color:#f92672">::&lt;/span>release() { compiler_barrier(); }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">inline&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> OrderAccess&lt;span style="color:#f92672">::&lt;/span>fence() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// always use locked addl since mfence is sometimes expensive
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#ifdef AMD64
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> __asm__ &lt;span style="color:#66d9ef">volatile&lt;/span> (&lt;span style="color:#e6db74">&amp;#34;lock; addl $0,0(%%rsp)&amp;#34;&lt;/span> &lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#e6db74">&amp;#34;cc&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;memory&amp;#34;&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">#else
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> __asm__ &lt;span style="color:#66d9ef">volatile&lt;/span> (&lt;span style="color:#e6db74">&amp;#34;lock; addl $0,0(%%esp)&amp;#34;&lt;/span> &lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#e6db74">&amp;#34;cc&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;memory&amp;#34;&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">#endif
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> compiler_barrier();
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="lock前缀指令的作用">lock前缀指令的作用&lt;/h3>
+&lt;ol>
+&lt;li>确保后续指令执行的原子性。在Pentium及之前的处理器中，带有lock前缀的指令在执行期间会锁住总线，使得其它处理器暂时无法通过总线访问内存，很显然，这个开销很大。在新的处理器中，Intel使用缓存锁定来保证指令执行的原子性，缓存锁定将大大降低lock前缀指令的执行开销。&lt;/li>
+&lt;li>LOCK前缀指令具有类似于内存屏障的功能，禁止该指令与前面和后面的读写指令重排序。&lt;/li>
+&lt;li>LOCK前缀指令会等待它之前所有的指令完成、并且所有缓冲的写操作写回内存(也就是将store buffer中的内容写入内存)之后才开始执行，并且根据缓存一致性协议，刷新store buffer的操作会导致其他cache中的副本失效。&lt;/li>
+&lt;/ol>
+&lt;h3 id="汇编层面volatile的实现">汇编层面volatile的实现&lt;/h3>
+&lt;p>添加下面的jvm参数查看之前可见性Demo的汇编指令&lt;/p>
+&lt;p>&lt;code>-XX:+UnlockDiagnosticVMOptions -XX:+PrintAssembly -Xcomp&lt;/code>&lt;/p>
+&lt;p>&lt;img src="https://img.hinathan.online/2025/07/343842034.png" alt="343842034">&lt;/p>
+&lt;p>验证了可见性使用了&lt;strong>lock前缀指令&lt;/strong>&lt;/p>
+&lt;h3 id="从硬件层面分析lock前缀指令">从硬件层面分析Lock前缀指令&lt;/h3>
+&lt;p>《64-ia-32-architectures-software-developer-vol-3a-part-1-manual.pdf》中有如下描述：&lt;/p>
+&lt;blockquote>
+&lt;p>The 32-bit IA-32 processors support locked atomic operations on locations in system memory. These operations are typically used to manage shared data structures (such as semaphores, segment descriptors, system segments, or page tables) in which two or more processors may try simultaneously to modify the same field or flag. The processor uses three interdependent mechanisms for carrying out locked atomic operations:&lt;/p>
+&lt;p>• Guaranteed atomic operations&lt;/p>
+&lt;p>• Bus locking, using the LOCK# signal and the LOCK instruction prefix&lt;/p>
+&lt;p>• Cache coherency protocols that ensure that atomic operations can be carried out on cached data structures (cache lock); this mechanism is present in the Pentium 4, Intel Xeon, and P6 family processors&lt;/p>
+&lt;/blockquote>
+&lt;p>32位的IA-32处理器支持对系统内存中的位置进行锁定的原子操作。这些操作通常用于管理共享的数据结构(如信号量、段描述符、系统段或页表)，在这些结构中，两个或多个处理器可能同时试图修改相同的字段或标志。&lt;/p>
+&lt;p>处理器使用三种相互依赖的机制来执行锁定的原子操作:&lt;/p>
+&lt;ul>
+&lt;li>有保证的原子操作&lt;/li>
+&lt;li>总线锁定，使用LOCK#信号和LOCK指令前缀&lt;/li>
+&lt;li>缓存一致性协议，确保原子操作可以在缓存的数据结构上执行(缓存锁);这种机制出现在Pentium 4、Intel Xeon和P6系列处理器中&lt;/li>
+&lt;/ul></description></item></channel></rss>
