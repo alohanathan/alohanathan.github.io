@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>有序性 on 逃跑山羊生活志</title><link>https://www.hinathan.online/tags/%E6%9C%89%E5%BA%8F%E6%80%A7/</link><description>Recent content in 有序性 on 逃跑山羊生活志 created by</description><generator>Hugo -- gohugo.io</generator><language>zh</language><copyright>2017 逃跑山羊生活志 All rights reserved</copyright><lastBuildDate>Tue, 21 Jan 2020 19:20:16 +0800</lastBuildDate><atom:link href="https://www.hinathan.online/tags/%E6%9C%89%E5%BA%8F%E6%80%A7/index.xml" rel="self" type="application/rss+xml"/><item><title>Java并发编程（四）并发三大特性-有序性</title><link>https://www.hinathan.online/blog/04-ordering/</link><pubDate>Tue, 21 Jan 2020 19:20:16 +0800</pubDate><guid>https://www.hinathan.online/blog/04-ordering/</guid><description>&lt;h2 id="有序性">有序性&lt;/h2>
+&lt;p>即程序执行的顺序按照代码的先后顺序执行。&lt;u>JVM 存在指令重排，所以存在有序性问题。&lt;/u>&lt;/p>
+&lt;h4 id="如何保证有序性">如何保证有序性&lt;/h4>
+&lt;ul>
+&lt;li>
+&lt;p>通过&lt;code>volatile&lt;/code>关键字保证有序性。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过&lt;code>内存屏障&lt;/code>保证有序性。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过&lt;code>synchronized&lt;/code>关键字保证有序性。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过&lt;code>Lock&lt;/code>保证有序性。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="有序性问题深入分析">有序性问题深入分析&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-java" data-lang="java">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">public&lt;/span> &lt;span style="color:#66d9ef">class&lt;/span> &lt;span style="color:#a6e22e">ReOrderTest&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">private&lt;/span> &lt;span style="color:#66d9ef">static&lt;/span> &lt;span style="color:#66d9ef">int&lt;/span> x &lt;span style="color:#f92672">=&lt;/span> 0&lt;span style="color:#f92672">,&lt;/span> y &lt;span style="color:#f92672">=&lt;/span> 0&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">private&lt;/span> &lt;span style="color:#66d9ef">static&lt;/span> &lt;span style="color:#66d9ef">int&lt;/span> a &lt;span style="color:#f92672">=&lt;/span> 0&lt;span style="color:#f92672">,&lt;/span> b &lt;span style="color:#f92672">=&lt;/span> 0&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">public&lt;/span> &lt;span style="color:#66d9ef">static&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>&lt;span style="color:#f92672">(&lt;/span>String&lt;span style="color:#f92672">[]&lt;/span> args&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#66d9ef">throws&lt;/span> InterruptedException &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">int&lt;/span> i &lt;span style="color:#f92672">=&lt;/span> 0&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">while&lt;/span> &lt;span style="color:#f92672">(&lt;/span>&lt;span style="color:#66d9ef">true&lt;/span>&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> i&lt;span style="color:#f92672">++;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> x &lt;span style="color:#f92672">=&lt;/span> 0&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> y &lt;span style="color:#f92672">=&lt;/span> 0&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> a &lt;span style="color:#f92672">=&lt;/span> 0&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> b &lt;span style="color:#f92672">=&lt;/span> 0&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Thread thread1 &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">new&lt;/span> Thread&lt;span style="color:#f92672">(()&lt;/span> &lt;span style="color:#f92672">-&amp;gt;&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> shortWait&lt;span style="color:#f92672">(&lt;/span>20000&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> a &lt;span style="color:#f92672">=&lt;/span> 1&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> x &lt;span style="color:#f92672">=&lt;/span> b&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">});&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Thread thread2 &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">new&lt;/span> Thread&lt;span style="color:#f92672">(()&lt;/span> &lt;span style="color:#f92672">-&amp;gt;&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> b &lt;span style="color:#f92672">=&lt;/span> 1&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> y &lt;span style="color:#f92672">=&lt;/span> a&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">});&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> thread1&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">start&lt;/span>&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> thread2&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">start&lt;/span>&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> thread1&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">join&lt;/span>&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> thread2&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">join&lt;/span>&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> System&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">out&lt;/span>&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">println&lt;/span>&lt;span style="color:#f92672">(&lt;/span>&lt;span style="color:#e6db74">&amp;#34;第&amp;#34;&lt;/span> &lt;span style="color:#f92672">+&lt;/span> i &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#e6db74">&amp;#34;次（&amp;#34;&lt;/span> &lt;span style="color:#f92672">+&lt;/span> x &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#e6db74">&amp;#34;,&amp;#34;&lt;/span> &lt;span style="color:#f92672">+&lt;/span> y &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#e6db74">&amp;#34;)&amp;#34;&lt;/span>&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">(&lt;/span>x &lt;span style="color:#f92672">==&lt;/span> 0 &lt;span style="color:#f92672">&amp;amp;&amp;amp;&lt;/span> y &lt;span style="color:#f92672">==&lt;/span> 0&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">break&lt;/span>&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">public&lt;/span> &lt;span style="color:#66d9ef">static&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> &lt;span style="color:#a6e22e">shortWait&lt;/span>&lt;span style="color:#f92672">(&lt;/span>&lt;span style="color:#66d9ef">long&lt;/span> interval&lt;span style="color:#f92672">)&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">long&lt;/span> start &lt;span style="color:#f92672">=&lt;/span> System&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">nanoTime&lt;/span>&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">long&lt;/span> end&lt;span style="color:#f92672">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">do&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> end &lt;span style="color:#f92672">=&lt;/span> System&lt;span style="color:#f92672">.&lt;/span>&lt;span style="color:#a6e22e">nanoTime&lt;/span>&lt;span style="color:#f92672">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span> &lt;span style="color:#66d9ef">while&lt;/span> &lt;span style="color:#f92672">(&lt;/span>start &lt;span style="color:#f92672">+&lt;/span> interval &lt;span style="color:#f92672">&amp;gt;=&lt;/span> end&lt;span style="color:#f92672">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>结果&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-java" data-lang="java">&lt;span style="display:flex;">&lt;span>第13512次&lt;span style="color:#960050;background-color:#1e0010">（&lt;/span>0&lt;span style="color:#f92672">,&lt;/span>1&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>第13513次&lt;span style="color:#960050;background-color:#1e0010">（&lt;/span>1&lt;span style="color:#f92672">,&lt;/span>0&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>第13514次&lt;span style="color:#960050;background-color:#1e0010">（&lt;/span>1&lt;span style="color:#f92672">,&lt;/span>0&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>第13515次&lt;span style="color:#960050;background-color:#1e0010">（&lt;/span>0&lt;span style="color:#f92672">,&lt;/span>1&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>第13516次&lt;span style="color:#960050;background-color:#1e0010">（&lt;/span>0&lt;span style="color:#f92672">,&lt;/span>1&lt;span style="color:#f92672">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="指令重排序">指令重排序&lt;/h2>
+&lt;p>Java语言规范规定JVM线程内部维持顺序化语义。即只要程序的最终结果与它顺序化情况的结果相等，那么指令的执行顺序可以与代码顺序不一致，此过程叫指令的重排序。&lt;/p>
+&lt;h3 id="指令重排序的意义">指令重排序的意义&lt;/h3>
+&lt;p>JVM能根据处理器特性（CPU多级缓存系统、多核处理器等）适当的对机器指令进行重排序，使机器指令能更符合CPU的执行特性，最大限度的发挥机器性能。&lt;/p>
+&lt;p>在编译器与CPU处理器中都能执行指令重排优化操作&lt;/p>
+&lt;p>&lt;img src="https://img.hinathan.online/2025/07/28567.png" alt="">&lt;/p>
+&lt;h3 id="volatile重排序规则">volatile重排序规则&lt;/h3>
+&lt;p>&lt;img src="https://img.hinathan.online/2025/07/28665.png" alt="">&lt;/p>
+&lt;h3 id="volatile禁止重排序场景">volatile禁止重排序场景&lt;/h3>
+&lt;ol>
+&lt;li>第二个操作是volatile写，不管第一个操作是什么都不会重排序&lt;/li>
+&lt;li>第一个操作是volatile读，不管第二个操作是什么都不会重排序&lt;/li>
+&lt;li>第一个操作是volatile写，第二个操作是volatile读，也不会发生重排序&lt;/li>
+&lt;/ol>
+&lt;h2 id="内存屏障">内存屏障&lt;/h2>
+&lt;h3 id="jmm内存屏障插入策略">JMM内存屏障插入策略&lt;/h3>
+&lt;ol>
+&lt;li>在每个volatile写操作的前面插入一个StoreStore屏障&lt;/li>
+&lt;li>在每个volatile写操作的后面插入一个StoreLoad屏障&lt;/li>
+&lt;li>在每个volatile读操作的后面插入一个LoadLoad屏障&lt;/li>
+&lt;li>在每个volatile读操作的后面插入一个LoadStore屏障&lt;/li>
+&lt;/ol>
+&lt;p>​ &lt;img src="https://img.hinathan.online/2025/07/28670.png" alt="0">&lt;/p>
+&lt;h3 id="jvm层面的内存屏障">JVM层面的内存屏障&lt;/h3>
+&lt;p>在JSR规范中定义了4种内存屏障：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>LoadLoad屏障&lt;/strong>：（指令Load1; LoadLoad; Load2），在Load2及后续读取操作要读取的数据被访问前，保证Load1要读取的数据被读取完毕。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>LoadStore屏障&lt;/strong>：（指令Load1; LoadStore; Store2），在Store2及后续写入操作被刷出前，保证Load1要读取的数据被读取完毕。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>StoreStore屏障&lt;/strong>：（指令Store1; StoreStore; Store2），在Store2及后续写入操作执行前，保证Store1的写入操作对其它处理器可见。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>StoreLoad屏障&lt;/strong>：（指令Store1; StoreLoad; Load2），在Load2及后续所有读取操作执行前，保证Store1的写入对所有处理器可见。它的开销是四种屏障中最大的。在大多数处理器的实现中，这个屏障是个万能屏障，兼具其它三种内存屏障的功能&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>由于x86只有store load可能会重排序，所以只有JSR的StoreLoad屏障对应它的mfence或lock前缀指令，其他屏障对应空操作&lt;/p>
+&lt;h3 id="硬件层内存屏障">硬件层内存屏障&lt;/h3>
+&lt;p>硬件层提供了一系列的内存屏障 memory barrier / memory fence(Intel的提法)来提供一致性的能力。&lt;/p>
+&lt;p>拿X86平台来说，有几种主要的内存屏障：&lt;/p>
+&lt;ol>
+&lt;li>lfence，是一种Load Barrier 读屏障&lt;/li>
+&lt;li>sfence, 是一种Store Barrier 写屏障&lt;/li>
+&lt;li>mfence, 是一种全能型的屏障，具备lfence和sfence的能力&lt;/li>
+&lt;li>Lock前缀，Lock不是一种内存屏障，但是它能完成类似内存屏障的功能。Lock会对CPU总线和高速缓存加锁，可以理解为CPU指令级的一种锁。它后面可以跟ADD, ADC, AND, BTC, BTR, BTS, CMPXCHG, CMPXCH8B, DEC, INC, NEG, NOT, OR, SBB, SUB, XOR, XADD, and XCHG等指令。&lt;/li>
+&lt;/ol>
+&lt;h4 id="内存屏障有两个能力">内存屏障有两个能力&lt;/h4>
+&lt;ol>
+&lt;li>阻止屏障两边的指令重排序&lt;/li>
+&lt;li>刷新处理器缓存/冲刷处理器缓存&lt;/li>
+&lt;/ol>
+&lt;p>对Load Barrier来说，在读指令前插入读屏障，可以让高速缓存中的数据失效，重新从主内存加载数据；对Store Barrier来说，在写指令之后插入写屏障，能让写入缓存的最新数据写回到主内存。&lt;/p>
+&lt;p>Lock前缀实现了类似的能力，它先对总线和缓存加锁，然后执行后面的指令，最后释放锁后会把高速缓存中的数据刷新回主内存。在Lock锁住总线的时候，其他CPU的读写请求都会被阻塞，直到锁释放。&lt;/p>
+&lt;p>不同硬件实现内存屏障的方式不同，Java内存模型屏蔽了这种底层硬件平台的差异，由JVM来为不同的平台生成相应的机器码。&lt;/p></description></item></channel></rss>
