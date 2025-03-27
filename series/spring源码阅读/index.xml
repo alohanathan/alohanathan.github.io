@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Spring源码阅读 on 摇滚山羊荆馆长</title><link>https://www.hinathan.online/series/spring%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/</link><description>Recent content in Spring源码阅读 on 摇滚山羊荆馆长 created by</description><generator>Hugo -- gohugo.io</generator><language>zh</language><copyright>2017 摇滚山羊荆馆长 All rights reserved</copyright><lastBuildDate>Wed, 16 Apr 2025 13:20:16 +0800</lastBuildDate><atom:link href="https://www.hinathan.online/series/spring%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/index.xml" rel="self" type="application/rss+xml"/><item><title>Spring源码阅读（一）Bean的创建过程</title><link>https://www.hinathan.online/blog/spring-bean-create/</link><pubDate>Wed, 16 Apr 2025 13:20:16 +0800</pubDate><guid>https://www.hinathan.online/blog/spring-bean-create/</guid><description>&lt;pre tabindex="0">&lt;code class="language-mermaid" data-lang="mermaid">graph TB
+实例化 --&amp;gt; 属性填充
+属性填充 --&amp;gt;BeanPostProcessor前置处理
+BeanPostProcessor前置处理--&amp;gt; 初始化阶段
+初始化阶段 --&amp;gt; BeanPostProcessor后置处理
+初始化阶段 --&amp;gt; 初始化完成
+初始化阶段 --&amp;gt; PostConstruct
+PostConstruct --&amp;gt; InitializingBean.afterPropertiesSet
+InitializingBean.afterPropertiesSet --&amp;gt; 自定义init-method
+自定义init-method --&amp;gt; aop
+&lt;/code>&lt;/pre>&lt;h2 id="创建的大致流程">创建的大致流程&lt;/h2>
+&lt;h3 id="推断构造方法">推断构造方法&lt;/h3>
+&lt;p>利用该类的构造方法来实例化得到一个对象（但是如何一个类中有多个构造方法，Spring则会进行选择，这个叫做推断构造方法）&lt;/p>
+&lt;h3 id="依赖注入">依赖注入&lt;/h3>
+&lt;p>得到一个对象后，Spring会判断该对象中是否存在被@Autowired注解了的属性，把这些属性找出来并由Spring进行赋值（属性填充）&lt;/p>
+&lt;h3 id="beanpostprocessor处理和初始化">BeanPostProcessor处理和初始化&lt;/h3>
+&lt;p>依赖注入后，Spring会判断该对象是否实现了BeanNameAware接口、BeanClassLoaderAware接口、BeanFactoryAware接口，如果实现了，就表示当前对象必须实现该接口中所定义的setBeanName()、setBeanClassLoader()、setBeanFactory()方法，那Spring就会调用这些方法并传入相应的参数（Aware回调）&lt;/p>
+&lt;h3 id="postconstruct-处理">PostConstruct 处理&lt;/h3>
+&lt;p>Aware回调后，Spring会判断该对象中是否存在某个方法被@PostConstruct注解了，如果存在，Spring会调用当前对象的此方法（初始化前）&lt;/p>
+&lt;h3 id="initializingbeanafterpropertiesset">InitializingBean.afterPropertiesSet&lt;/h3>
+&lt;p>紧接着，Spring会判断该对象是否实现了InitializingBean接口，如果实现了，就表示当前对象必须实现该接口中的afterPropertiesSet()方法，那Spring就会调用当前对象中的afterPropertiesSet()方法（初始化）&lt;/p>
+&lt;h3 id="aop">aop&lt;/h3>
+&lt;p>最后，Spring会判断当前对象需不需要进行AOP，如果不需要那么Bean就创建完了，如果需要进行AOP，则会进行动态代理并生成一个代理对象做为Bean（初始化后）&lt;/p>
+&lt;p>通过最后一步，我们可以发现，当Spring根据UserService类来创建一个Bean时：&lt;/p>
+&lt;ol>
+&lt;li>如果不用进行AOP，那么Bean就是UserService类的构造方法所得到的对象。&lt;/li>
+&lt;li>如果需要进行AOP，那么Bean就是UserService的代理类所实例化得到的对象，而不是UserService本身所得到的对象。&lt;/li>
+&lt;/ol>
+&lt;p>Bean对象创建出来后：&lt;/p>
+&lt;ol>
+&lt;li>如果当前Bean是单例Bean，那么会把该Bean对象存入一个Map&amp;lt;String, Object&amp;gt;，Map的key为beanName，value为Bean对象。这样下次getBean时就可以直接从Map中拿到对应的Bean对象了。（实际上，在Spring源码中，这个Map就是单例池）&lt;/li>
+&lt;li>如果当前Bean是原型Bean，那么后续没有其他动作，不会存入一个Map，下次getBean时会再次执行上述创建过程，得到一个新的Bean对象。&lt;/li>
+&lt;/ol></description></item></channel></rss>
