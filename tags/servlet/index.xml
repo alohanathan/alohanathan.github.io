@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>servlet on 摇滚山羊荆馆长</title><link>https://www.hinathan.online/tags/servlet/</link><description>Recent content in servlet on 摇滚山羊荆馆长 created by</description><generator>Hugo -- gohugo.io</generator><language>zh</language><copyright>2017 摇滚山羊荆馆长 All rights reserved</copyright><lastBuildDate>Sat, 01 Mar 2025 14:16:34 +0800</lastBuildDate><atom:link href="https://www.hinathan.online/tags/servlet/index.xml" rel="self" type="application/rss+xml"/><item><title>Filter和Inteceptor的区别</title><link>https://www.hinathan.online/blog/filter_and_interceptor/</link><pubDate>Sat, 01 Mar 2025 14:16:34 +0800</pubDate><guid>https://www.hinathan.online/blog/filter_and_interceptor/</guid><description>&lt;p>最近在处理&lt;code>Spring Security&lt;/code>的工作， 一个请求经过那么多过滤器和拦截器，到底有什么先后顺序又有什么关系呢？&lt;/p>
+&lt;p>在Java体系中，所有的http请求最后都经过servlet处理。就像我们一开始学习servlet的时候，编码我们需要自己在一个filter中处理，文件的上传和下载需要我们自己通过&lt;code>servlet api&lt;/code>获取字节流处理，等等一系列麻烦又繁多的工作，后来Spring MVC出现了，解决了这一问题。&lt;/p>
+&lt;p>Spring MVC本质上也是一个servlet，就是&lt;code>DispatcherServlet&lt;/code> ，DispatcherServlet处理了业务请求，然后又通过DispatcherServlet返回，就像我们自己自定义一个servlet那样，只不过在处理servlet的过程中要复杂的多。&lt;/p>
+&lt;p>http -&amp;gt; filter -&amp;gt; servlet -&amp;gt; interceptor -&amp;gt; controller&lt;/p>
+&lt;p>&lt;code>Filter&lt;/code> 和 &lt;code>Interceptor&lt;/code> 是 Java Web 开发中常用的两种拦截机制，虽然它们都可以用来实现类似的功能，比如请求拦截、权限校验、日志记录等，但它们的作用范围、使用方式、生命周期等方面都有明显区别。&lt;/p>
+&lt;h3 id="一filter过滤器">🧩一、Filter（过滤器）&lt;/h3>
+&lt;p>&lt;code>javax.servlet.Filter&lt;/code>属于Servlet 规范中的组件，属于 Java EE 标准。使用在 &lt;strong>Servlet 容器（如 Tomcat）级别&lt;/strong>。拦截 &lt;strong>HTTP 请求和响应&lt;/strong>，在进入 Servlet 之前和响应返回客户端之前处理。&lt;/p>
+&lt;hr>
+&lt;h3 id="-二interceptor拦截器">🧩 二、Interceptor（拦截器）&lt;/h3>
+&lt;p>&lt;code>HandlerInterceptor&lt;/code>是Spring MVC 提供的功能，属于 &lt;strong>Spring 框架层面&lt;/strong>。拦截 &lt;strong>Controller 方法的调用&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>请求进入 DispatcherServlet 之后才生效（Filter 是 DispatcherServlet 之前）&lt;/li>
+&lt;/ul>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>特性&lt;/th>
+&lt;th>Filter（过滤器）&lt;/th>
+&lt;th>Interceptor（拦截器）&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>所属体系&lt;/td>
+&lt;td>Servlet 规范&lt;/td>
+&lt;td>Spring MVC 框架&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>作用范围&lt;/td>
+&lt;td>所有请求，包括静态资源&lt;/td>
+&lt;td>仅拦截控制器请求（不包括静态资源）&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>执行顺序&lt;/td>
+&lt;td>在 DispatcherServlet 之前执行&lt;/td>
+&lt;td>在 DispatcherServlet 之后执行&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>配置方式&lt;/td>
+&lt;td>web.xml 或注解&lt;/td>
+&lt;td>Java Config (&lt;code>WebMvcConfigurer&lt;/code>)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>拦截粒度&lt;/td>
+&lt;td>请求级别（request/response）&lt;/td>
+&lt;td>方法级别（Handler）&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>常用场景&lt;/td>
+&lt;td>编码、日志、权限、XSS&lt;/td>
+&lt;td>登录、权限、日志、限流&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table></description></item></channel></rss>
