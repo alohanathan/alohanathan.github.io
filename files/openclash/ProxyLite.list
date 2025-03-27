@@ -1,0 +1,72 @@
+# 代理补充列表
+
+## > Docker
+DOMAIN-SUFFIX,docker.com
+DOMAIN-SUFFIX,docker.io
+DOMAIN-SUFFIX,dockerhub.com
+DOMAIN-SUFFIX,compose-spec.io
+DOMAIN,d1q6f0aelx0por.cloudfront.net
+DOMAIN,d2wy8f7a9ursnm.cloudfront.net
+DOMAIN,d36jcksde1wxzq.cloudfront.net
+
+# 域名后缀匹配
+DOMAIN-SUFFIX,bptv.freetv.top
+DOMAIN-SUFFIX,qichiyu.com
+DOMAIN-SUFFIX,livednow.com
+DOMAIN-SUFFIX,livednow.org
+DOMAIN-SUFFIX,pages.dev
+DOMAIN-SUFFIX,my777999.top
+DOMAIN-SUFFIX,steampowered.com
+DOMAIN-SUFFIX,voicehub.top
+DOMAIN-SUFFIX,pages.dev
+
+DOMAIN-SUFFIX,xiaoya.pro
+DOMAIN-SUFFIX,icyou.eu.org
+DOMAIN-SUFFIX,emby.8.net.co
+DOMAIN-SUFFIX,emby.raydoom.tk
+DOMAIN-SUFFIX,embyxiaoya.laogl.top
+DOMAIN-SUFFIX,emby-data.poxi1221.eu.org
+DOMAIN-SUFFIX,emby-data.bdbd.fun
+DOMAIN-SUFFIX,emby-data.ymschh.top
+DOMAIN-SUFFIX,emby-data.r2s.site
+DOMAIN-SUFFIX,emby-data.neversay.eu.org
+DOMAIN-SUFFIX,emby-data.800686.xyz
+DOMAIN-SUFFIX,emby-data.xn--yetq23gxma.org
+DOMAIN-SUFFIX,emby-data.younv.at
+DOMAIN-SUFFIX,emby.kaiserver.uk
+DOMAIN-SUFFIX,emby-data.ermaokj.cn
+DOMAIN-SUFFIX,emby-data.wwwh.eu.org
+DOMAIN-SUFFIX,emby-data.f1rst.top
+DOMAIN-SUFFIX,emby-data.wx1.us.kg
+DOMAIN-SUFFIX,emby-data.xnn.ee
+
+
+DOMAIN-SUFFIX,docker.io
+DOMAIN-SUFFIX,docker.com
+
+# 域名关键字匹配
+DOMAIN-KEYWORD,1e100
+
+# IP段匹配
+IP-CIDR,142.171.133.131/32,no-resolve
+IP-CIDR,103.115.43.2/32,no-resolve
+
+# 国外DNS
+DOMAIN-SUFFIX,dns.google
+DOMAIN-SUFFIX,1dot1dot1dot1.cloudflare-dns.com
+DOMAIN-SUFFIX,dot.sb
+DOMAIN-SUFFIX,dns.umbrella.com
+DOMAIN-SUFFIX,dns.quad9.net
+DOMAIN-SUFFIX,dns.google
+DOMAIN-SUFFIX,cloudflare-dns.com
+DOMAIN-SUFFIX,doh.dns.sb
+DOMAIN-SUFFIX,doh.opendns.com
+DOMAIN-SUFFIX,dns.quad9.net
+DOMAIN-SUFFIX,hk-hkg.doh.sb
+IP-CIDR,8.8.8.8/32,no-resolve
+IP-CIDR,8.8.4.4/32,no-resolve
+IP-CIDR,1.1.1.1/32,no-resolve
+IP-CIDR,1.0.0.1/32,no-resolve
+IP-CIDR,185.222.222.222/32,no-resolve
+IP-CIDR,208.67.222.222/32,no-resolve
+IP-CIDR,208.67.220.220/32,no-resolve
